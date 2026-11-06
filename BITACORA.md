@@ -13,3 +13,10 @@
 - Dónde me trabé: No tuve inconvenientes importantes.
 - Qué haré en la próxima clase: Elaborar los diagramas lógico y físico de la arquitectura.
 - Uso de IA: Solicité apoyo para estructurar los requisitos y realizar los cálculos de carga. Revisé las estimaciones y las decisiones del diseño.
+
+## Viernes 6 de noviembre de 2026
+
+- Qué hice hoy: Elaboré los diagramas lógico y físico del sistema, identificando las conexiones entre los componentes. También reuní los avances anteriores en DISENO.md y agregué las justificaciones y los tres riesgos de la arquitectura.
+- Dónde me trabé: Tuve algunas dificultades al representar cada uno de los diagramas.
+- Qué haré en la próxima clase: Realizar la entrega completa del ENTREGABLE 1 y mirar por encima lo que sigue con el ENTREGABLE 2.
+- Uso de IA: Solicité ayuda para comprender las conexiones de los diagramas, luego de entenderlas las pude graficar con mayor facilidad. 

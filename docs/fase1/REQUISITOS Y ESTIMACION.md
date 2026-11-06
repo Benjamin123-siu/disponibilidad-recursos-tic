@@ -37,7 +37,7 @@ Año escolar: Aprox 200 dias de actividad
 **Un Colegio**
 Lecturas al día: 40 profesores x 12 consultas = 480 lecturas por día
 Escrituras al día: 20 movimientos por día
-Relación: 480/20 = 24 escrituras por día 
+Relación: 480/20 = 24 escrituras por cada escritura (24:1)
 
 **10 Colegios**
 Lecturas al día: 480 x 10 = 4800 lecturas al día
