@@ -6,10 +6,16 @@ Objetivo: diseñar y construir una API sencilla para consultar la disponibilidad
 
 ## Estado
 
-Fase 1 - Diseño en desarrollo.
+Fase 2 en desarrollo. La base PostgreSQL primaria está operativa.
 
 ## Documentación
 
 - [Problemática elegida](docs/fase1/PROBLEMA.md)
 
-El código y Docker Compose se incorporarán en las fases siguientes.
+- [Evidencias de la Fase 2](docs/fase2/EVIDENCIAS.md)
+
+## Levantar la primaria
+
+En la raíz del clon, crea un archivo local `.env` con una línea `POSTGRES_PASSWORD=tu_clave`. Reemplaza el ejemplo por una contraseña propia antes del primer arranque. Git excluye ese archivo.
+
+Ejecuta `docker compose up -d --wait primaria`. Los datos quedan guardados en el volumen `primaria_datos`.

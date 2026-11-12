@@ -20,3 +20,8 @@
 - Dónde me trabé: Tuve algunas dificultades al representar cada uno de los diagramas.
 - Qué haré en la próxima clase: Realizar la entrega completa del ENTREGABLE 1 y mirar por encima lo que sigue con el ENTREGABLE 2.
 - Uso de IA: Solicité ayuda para comprender las conexiones de los diagramas, luego de entenderlas las pude graficar con mayor facilidad. 
+## Jueves 12 de noviembre de 2026
+
+- Levanté PostgreSQL 16 con Docker Compose y observé el estado Healthy.
+- Con apoyo de IA se configuró la primaria, se verificó su rol con SQL y se registró el resultado en las evidencias de Fase 2.
+- Próximo paso: conectar la réplica y comprobar la replicación streaming.

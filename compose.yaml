@@ -1,0 +1,16 @@
+services:
+  primaria:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: recursos_tic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
+    volumes:
+      - primaria_datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "recursos_tic"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  primaria_datos:
