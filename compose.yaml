@@ -45,6 +45,72 @@ services:
       timeout: 3s
       retries: 12
 
+  instancia-1:
+    image: nginx:stable-alpine
+    hostname: instancia-1
+    volumes:
+      - ./infra/nginx/instancia.conf:/etc/nginx/conf.d/default.conf:ro
+
+  instancia-2:
+    image: nginx:stable-alpine
+    hostname: instancia-2
+    volumes:
+      - ./infra/nginx/instancia.conf:/etc/nginx/conf.d/default.conf:ro
+
+  balanceador:
+    image: nginx:stable-alpine
+    depends_on:
+      - instancia-1
+      - instancia-2
+    volumes:
+      - ./infra/nginx/balanceador.conf:/etc/nginx/conf.d/default.conf:ro
+
+  kong:
+    image: kong:3.9
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        umask 077
+        printf '%s\n' "$$FASE2_CONFIG" > /dev/shm/fase2-kong.yml
+        unset FASE2_CONFIG
+        exec /docker-entrypoint.sh kong docker-start
+    depends_on:
+      - balanceador
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "off"
+      KONG_DECLARATIVE_CONFIG: /dev/shm/fase2-kong.yml
+      FASE2_CONFIG: |
+        _format_version: "3.0"
+        services:
+          - name: balanceador
+            url: http://balanceador:80
+            routes:
+              - name: salud
+                paths: ["~/health$$"]
+                methods: [GET]
+                strip_path: false
+            plugins:
+              - name: key-auth
+                config:
+                  key_names: [apikey]
+                  key_in_query: false
+                  key_in_body: false
+                  hide_credentials: true
+        consumers:
+          - username: prueba-fase2
+            keyauth_credentials:
+              - key: "${KONG_API_KEY:?Configura KONG_API_KEY en .env}"
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
 volumes:
   primaria_datos:
   replica_datos:
