@@ -1,11 +1,44 @@
 services:
   primaria:
     image: postgres:16
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/acceso.conf", "-c", "wal_keep_size=128MB"]
     environment:
       POSTGRES_DB: recursos_tic
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
     volumes:
       - primaria_datos:/var/lib/postgresql/data
+      - ./infra/postgres/pg_hba.conf:/etc/postgresql/acceso.conf:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "recursos_tic"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  configurar-replicacion:
+    image: postgres:16
+    depends_on:
+      primaria:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:?Configura REPLICATION_PASSWORD en .env}
+    volumes:
+      - ./infra/postgres/replicador.sql:/tmp/replicador.sql:ro
+    command: ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", "primaria", "-U", "postgres", "-d", "recursos_tic", "-f", "/tmp/replicador.sql"]
+
+  replica:
+    image: postgres:16
+    user: postgres
+    depends_on:
+      configurar-replicacion:
+        condition: service_completed_successfully
+    environment:
+      PGDATA: /var/lib/postgresql/data/standby
+      PGPASSWORD: ${REPLICATION_PASSWORD:?}
+    volumes:
+      - replica_datos:/var/lib/postgresql/data
+      - ./infra/postgres/replica.sh:/opt/replica.sh:ro
+    entrypoint: ["sh", "/opt/replica.sh"]
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "recursos_tic"]
       interval: 5s
@@ -14,3 +47,4 @@ services:
 
 volumes:
   primaria_datos:
+  replica_datos:

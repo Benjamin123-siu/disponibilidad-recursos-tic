@@ -25,3 +25,4 @@
 - Levanté PostgreSQL 16 con Docker Compose y observé el estado Healthy.
 - Con apoyo de IA se configuró la primaria, se verificó su rol con SQL y se registró el resultado en las evidencias de Fase 2.
 - Próximo paso: conectar la réplica y comprobar la replicación streaming.
+- Conecté la réplica física. La primaria pasó de 0 conexiones de replicación a una en streaming, y la réplica confirmó el modo de solo lectura.

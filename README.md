@@ -6,7 +6,7 @@ Objetivo: diseñar y construir una API sencilla para consultar la disponibilidad
 
 ## Estado
 
-Fase 2 en desarrollo. La base PostgreSQL primaria está operativa.
+Fase 2 en desarrollo. La primaria PostgreSQL transmite cambios a una réplica de solo lectura.
 
 ## Documentación
 
@@ -16,6 +16,8 @@ Fase 2 en desarrollo. La base PostgreSQL primaria está operativa.
 
 ## Levantar la primaria
 
-En la raíz del clon, crea un archivo local `.env` con una línea `POSTGRES_PASSWORD=tu_clave`. Reemplaza el ejemplo por una contraseña propia antes del primer arranque. Git excluye ese archivo.
+En la raíz del clon, crea un archivo local `.env` con dos líneas, `POSTGRES_PASSWORD=clave_primaria` y `REPLICATION_PASSWORD=clave_replica`. Reemplaza ambos ejemplos por contraseñas propias y distintas antes del primer arranque. Git excluye ese archivo.
 
 Ejecuta `docker compose up -d --wait primaria`. Los datos quedan guardados en el volumen `primaria_datos`.
+
+Para iniciar ambas bases, ejecuta `docker compose up -d --wait replica`. El servicio configurar-replicacion prepara el usuario de replicación y termina. En el primer arranque la réplica toma una copia de la primaria. En los siguientes reutiliza su volumen.
