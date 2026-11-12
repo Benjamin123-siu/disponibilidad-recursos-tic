@@ -20,9 +20,11 @@
 - Dónde me trabé: Tuve algunas dificultades al representar cada uno de los diagramas.
 - Qué haré en la próxima clase: Realizar la entrega completa del ENTREGABLE 1 y mirar por encima lo que sigue con el ENTREGABLE 2.
 - Uso de IA: Solicité ayuda para comprender las conexiones de los diagramas, luego de entenderlas las pude graficar con mayor facilidad. 
+
 ## Jueves 12 de noviembre de 2026
 
-- Levanté PostgreSQL 16 con Docker Compose y observé el estado Healthy.
-- Con apoyo de IA se configuró la primaria, se verificó su rol con SQL y se registró el resultado en las evidencias de Fase 2.
-- Próximo paso: conectar la réplica y comprobar la replicación streaming.
-- Conecté la réplica física. La primaria pasó de 0 conexiones de replicación a una en streaming, y la réplica confirmó el modo de solo lectura.
+- Qué hice hoy: Levanté PostgreSQL 16 con Docker Compose y observé el estado Healthy. Conecté la réplica física. Probé el balanceador NGINX con cuatro solicitudes a /health. Probé Kong como única entrada local.
+- Dónde me trabé: Al momento de realizar la configuración.
+- Qué haré en la próxima clase: Realizar la entrega completa del ENTREGABLE 2 y mirar por encima lo que sigue con el ENTREGABLE 2.
+- Uso de IA: Solicité ayuda para realizar las configuraciones de cada componente y para instalar docker.
+
