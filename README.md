@@ -14,33 +14,81 @@ Fase 2 en desarrollo. La primaria PostgreSQL transmite cambios a una réplica de
 
 - [Evidencias de la Fase 2](docs/fase2/EVIDENCIAS.md)
 
-## Levantar la primaria
+## Configuración inicial (solo la primera vez)
 
-Antes de iniciar Docker Compose, crea un archivo `.env` en la raíz del proyecto. Define `POSTGRES_PASSWORD` y `REPLICATION_PASSWORD` con contraseñas distintas, y `KONG_API_KEY` con una clave hexadecimal aleatoria de 64 caracteres. Escribe cada variable en una línea con el formato `NOMBRE=valor`. Git excluye este archivo.
+Si ya tienes el archivo `.env` configurado, pasa a **Levantar la arquitectura completa**.
 
-Ejecuta `docker compose up -d --wait primaria`. Los datos quedan guardados en el volumen `primaria_datos`.
+Si acabas de clonar el repositorio, crea un archivo llamado `.env` en la misma carpeta que `compose.yaml`. Escribe una variable por línea con el formato `NOMBRE=valor`.
 
-Para iniciar ambas bases, ejecuta `docker compose up -d --wait replica`. El servicio configurar-replicacion prepara el usuario de replicación y termina. En el primer arranque la réplica toma una copia de la primaria. En los siguientes reutiliza su volumen.
+| Variable | Para qué se usa |
+| --- | --- |
+| `POSTGRES_PASSWORD` | Contraseña del usuario `postgres` de la primaria. |
+| `REPLICATION_PASSWORD` | Contraseña que usa el usuario `replicador` para conectar la réplica a la primaria. |
+| `KONG_API_KEY` | Clave que Kong comprueba al recibir una solicitud. Usa una clave hexadecimal aleatoria de 64 caracteres. |
+
+Elige contraseñas distintas para los dos usuarios de PostgreSQL. Git excluye el archivo `.env` para mantener las credenciales fuera del repositorio.
+
+## Levantar la arquitectura completa
+
+Abre Docker Desktop y espera a que indique `Engine running`. Desde la raíz del proyecto, ejecuta:
+
+```sh
+docker compose up -d --wait
+```
+
+Este comando levanta Kong, el balanceador NGINX, las dos instancias de prueba y las dos bases de datos. El servicio `configurar-replicacion` prepara el usuario de replicación y termina. Es normal que aparezca como `Exited` después de completar su tarea.
+
+## Levantar solo las bases de datos
+
+Para iniciar únicamente la primaria, ejecuta:
+
+```sh
+docker compose up -d --wait primaria
+```
+
+La primaria guarda sus datos en el volumen `primaria_datos`. Para iniciar la primaria y la réplica juntas, ejecuta:
+
+```sh
+docker compose up -d --wait replica
+```
+
+En el primer arranque, la réplica toma una copia de la primaria. En los siguientes, reutiliza su volumen y continúa recibiendo los cambios.
 
 ### Cambiar la contraseña de una primaria existente
 
-PostgreSQL usa `POSTGRES_PASSWORD` para crear el usuario administrador en el primer arranque. Si la base ya contiene datos, sigue estos pasos desde la raíz del proyecto.
+1. Con la primaria encendida, abre una sesión en PostgreSQL:
 
-1. Abre una sesión con `docker compose exec primaria psql -U postgres -d recursos_tic`.
-2. En el indicador `recursos_tic=#`, ejecuta `\password postgres`. Escribe la nueva contraseña dos veces y sal con `\q`.
-3. Abre el archivo local `.env`, actualiza solo `POSTGRES_PASSWORD` con la misma contraseña y guarda el archivo.
-4. Comprueba que Compose puede conectarse con el valor guardado:
+   ```sh
+   docker compose exec primaria psql -U postgres -d recursos_tic
+   ```
+
+2. Cuando aparezca `recursos_tic=#`, ejecuta `\password postgres`. Escribe la nueva contraseña dos veces y sal con `\q`.
+3. Abre tu `.env`, cambia el valor de `POSTGRES_PASSWORD` por esa misma contraseña y guarda el archivo.
+4. Comprueba que Docker Compose puede conectarse con la contraseña guardada:
 
    ```sh
    docker compose run --rm --no-deps -T --entrypoint psql configurar-replicacion -X -w -h primaria -U postgres -d recursos_tic -c "SELECT current_user;"
    ```
 
-   La consulta debe devolver `postgres`.
+   Si la conexión funciona, la consulta devuelve `postgres`.
 
 ## Probar el balanceador interno
 
-Ejecuta `docker compose up -d --wait balanceador`. Desde ese contenedor, `docker compose exec -T balanceador curl -fsSi http://127.0.0.1/health` consulta el balanceador. La cabecera `X-Instance` identifica cuál de los dos servicios de prueba respondió.
+Si ya levantaste la arquitectura completa, puedes hacer la prueba directamente. Para iniciar solo NGINX y las dos instancias, ejecuta `docker compose up -d --wait balanceador`.
 
-## Entrada local mediante Kong
+Ejecuta esta consulta varias veces:
 
-Ejecuta `docker compose up -d --wait`. Kong publica el puerto 8000 en 127.0.0.1. La ruta GET /health requiere la clave en la cabecera apikey. El balanceador y las bases se comunican por la red de Docker.
+```sh
+docker compose exec -T balanceador curl -fsSi http://127.0.0.1/health
+```
+
+La consulta se ejecuta dentro del contenedor del balanceador. La cabecera `X-Instance` indica qué servicio respondió en cada solicitud: `instancia-1` o `instancia-2`.
+
+## Acceder desde el PC mediante Kong
+
+Con la arquitectura completa en ejecución, Kong recibe las solicitudes del PC en `http://127.0.0.1:8000/health`. Para consultar esta ruta, envía una solicitud `GET` con la cabecera `apikey` y el valor de `KONG_API_KEY` guardado en tu `.env`.
+
+| Solicitud | Resultado esperado |
+| --- | --- |
+| Con la clave válida | `200 OK` y la cabecera `X-Instance` con el nombre de la instancia que respondió. |
+| Sin clave o con una clave incorrecta | `401 Unauthorized`. |

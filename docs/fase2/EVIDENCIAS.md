@@ -74,3 +74,21 @@ docker compose ps
 ```
 
 En la lista de puertos, solo Kong mostró un puerto publicado en Windows: 127.0.0.1:8000. La API administrativa de Kong está deshabilitada.
+
+## Escritura en la primaria y lectura en la réplica — viernes 13 de noviembre de 2026
+
+# Escritura
+docker compose -f "$env:USERPROFILE\OneDrive\Escritorio\disponibilidad-recursos-tic\compose.yaml" exec -T primaria psql -U postgres -d recursos_tic -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS prueba_fase2 (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, recurso text NOT NULL);" -c "INSERT INTO prueba_fase2 (recurso) VALUES ('Cable HDMIl') RETURNING id, recurso;" 
+
+# Lectura
+docker compose -f "$env:USERPROFILE\OneDrive\Escritorio\disponibilidad-recursos-tic\compose.yaml" exec -T replica psql -U postgres -d recursos_tic -c "SELECT id, recurso, pg_is_in_recovery() AS es_replica FROM prueba_fase2 WHERE id = 1;"
+
+Aqui se guarda un registro en la base de datos primaria al cual se le asingnó la ID 1. Al hacer la búsqueda de esa ID dentro de la bd réplica se encuentra el mismo recurso, el Cable HDMI (se me coló una l al final, en la captura sale HDMIl). Que en la imagen salga "es_replica = t" significa que realmente se estaba realizando la lectura sobre esa base de datos, asi comprobamos que el dato escrito en la primaria llegó correctamente a la réplica.
+
+# Capturas
+
+![Levantamiento de Arquitectura con Docker Compose](<evidencias viernes 13/Levantamiento arq. docker compose.png>)
+
+![Escritura en la primaria: PostgreSQL asignó el ID 1 al registro](<evidencias viernes 13/Escritura de datos en bd primaria.png>)
+
+![Lectura en la réplica: aparece el mismo registro con es_replica = t](<evidencias viernes 13/Lectura de datos en bd replica.png>)

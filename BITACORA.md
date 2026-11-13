@@ -28,3 +28,9 @@
 - Qué haré en la próxima clase: Realizar la entrega completa del ENTREGABLE 2 y mirar por encima lo que sigue con el ENTREGABLE 2.
 - Uso de IA: Solicité ayuda para realizar las configuraciones de cada componente y para instalar docker.
 
+## Viernes 13 de noviembre de 2026
+
+- Qué hice hoy: Registré las evidencias de la escritura y lectura de datos sobre las bd correspondientes
+- Dónde me trabé: No presenté complicaciones al momento de realizar esta actividad
+- Qué haré en la próxima clase: Comenzar fase 3
+- Uso de IA: Solo para aclarar dudas y comprender mejor el funionamiento
