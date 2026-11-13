@@ -92,3 +92,9 @@ Aqui se guarda un registro en la base de datos primaria al cual se le asingnó l
 ![Escritura en la primaria: PostgreSQL asignó el ID 1 al registro](<evidencias viernes 13/Escritura de datos en bd primaria.png>)
 
 ![Lectura en la réplica: aparece el mismo registro con es_replica = t](<evidencias viernes 13/Lectura de datos en bd replica.png>)
+
+![Vista general de los contenedores en Docker Desktop](<evidencias viernes 13/menu docker.png>)
+
+![Kong como única entrada y rechazo de la solicitud sin clave](<evidencias viernes 13/kong_entrada.png>)
+
+![Dos solicitudes autorizadas por Kong, atendidas por distintas instancias](<evidencias viernes 13/kong_con_balanceo_nginx.png>)
