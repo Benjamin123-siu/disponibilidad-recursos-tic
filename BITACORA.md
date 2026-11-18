@@ -34,3 +34,11 @@
 - Dónde me trabé: No presenté complicaciones al momento de realizar esta actividad
 - Qué haré en la próxima clase: Comenzar fase 3
 - Uso de IA: Solo para aclarar dudas y comprender mejor el funionamiento
+
+## Miercoles 18 de noviembre de 2026
+
+- Qué hice hoy: Reemplacé las instancias de prueba por una aplicación Python con Flask. Implementé consultas GET desde la réplica y registros POST en la primaria. También comprobé el balanceador y la autenticación mediante API Key en Kong.
+- Dónde me trabé:Tuve problemas con el nombre del Dockerfile y con la indentación de la configuración de Kong, pero logré corregirlos.
+- Qué haré en la próxima clase: Continuar con el desarrollo de la app para la fase 3
+- Uso de IA: Solicité ayuda para implementar los endpoints, configurar Docker y solucionar errores. Revisé las configuraciones y comprobé el funcionamiento mediante pruebas en Codespaces.
+

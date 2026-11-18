@@ -1,7 +1,14 @@
+
 services:
+  # BASE DE DATOS PRIMARIA
   primaria:
     image: postgres:16
-    command: ["postgres", "-c", "hba_file=/etc/postgresql/acceso.conf", "-c", "wal_keep_size=128MB"]
+    command:
+      - postgres
+      - -c
+      - hba_file=/etc/postgresql/acceso.conf
+      - -c
+      - wal_keep_size=128MB
     environment:
       POSTGRES_DB: recursos_tic
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
@@ -14,6 +21,7 @@ services:
       timeout: 3s
       retries: 12
 
+  # CONFIGURACION DE REPLICACION
   configurar-replicacion:
     image: postgres:16
     depends_on:
@@ -24,8 +32,21 @@ services:
       REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:?Configura REPLICATION_PASSWORD en .env}
     volumes:
       - ./infra/postgres/replicador.sql:/tmp/replicador.sql:ro
-    command: ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", "primaria", "-U", "postgres", "-d", "recursos_tic", "-f", "/tmp/replicador.sql"]
+    command:
+      - psql
+      - -X
+      - -v
+      - ON_ERROR_STOP=1
+      - -h
+      - primaria
+      - -U
+      - postgres
+      - -d
+      - recursos_tic
+      - -f
+      - /tmp/replicador.sql
 
+  # BASE DE DATOS REPLICA
   replica:
     image: postgres:16
     user: postgres
@@ -45,18 +66,27 @@ services:
       timeout: 3s
       retries: 12
 
+  # APLICACION PYTHON - INSTANCIA 1
   instancia-1:
-    image: nginx:stable-alpine
+    build: ./app
     hostname: instancia-1
-    volumes:
-      - ./infra/nginx/instancia.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      INSTANCE_ID: instancia-1
+      DB_PRIMARY_URL: "postgresql://postgres@primaria:5432/recursos_tic"
+      DB_REPLICA_URL: "postgresql://postgres@replica:5432/recursos_tic"
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
 
+  # APLICACION PYTHON - INSTANCIA 2
   instancia-2:
-    image: nginx:stable-alpine
+    build: ./app
     hostname: instancia-2
-    volumes:
-      - ./infra/nginx/instancia.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      INSTANCE_ID: instancia-2
+      DB_PRIMARY_URL: "postgresql://postgres@primaria:5432/recursos_tic"
+      DB_REPLICA_URL: "postgresql://postgres@replica:5432/recursos_tic"
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
 
+  # BALANCEADOR DE CARGA
   balanceador:
     image: nginx:stable-alpine
     depends_on:
@@ -65,6 +95,7 @@ services:
     volumes:
       - ./infra/nginx/balanceador.conf:/etc/nginx/conf.d/default.conf:ro
 
+  # API GATEWAY
   kong:
     image: kong:3.9
     entrypoint:
@@ -86,14 +117,22 @@ services:
       KONG_DECLARATIVE_CONFIG: /dev/shm/fase2-kong.yml
       FASE2_CONFIG: |
         _format_version: "3.0"
+
         services:
           - name: balanceador
             url: http://balanceador:80
+
             routes:
               - name: salud
                 paths: ["~/health$$"]
                 methods: [GET]
                 strip_path: false
+
+              - name: api-recursos
+                paths: ["/api/v1/"]
+                methods: [GET, POST]
+                strip_path: false
+
             plugins:
               - name: key-auth
                 config:
@@ -101,16 +140,19 @@ services:
                   key_in_query: false
                   key_in_body: false
                   hide_credentials: true
+
         consumers:
           - username: prueba-fase2
             keyauth_credentials:
               - key: "${KONG_API_KEY:?Configura KONG_API_KEY en .env}"
+
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 5s
       timeout: 5s
       retries: 20
 
+# VOLUMENES PERSISTENTES
 volumes:
   primaria_datos:
   replica_datos:
