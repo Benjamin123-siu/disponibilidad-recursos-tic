@@ -42,3 +42,9 @@
 - Qué haré en la próxima clase: Continuar con el desarrollo de la app para la fase 3
 - Uso de IA: Solicité ayuda para implementar los endpoints, configurar Docker y solucionar errores. Revisé las configuraciones y comprobé el funcionamiento mediante pruebas en Codespaces.
 
+## Jueves 19 de noviembre de 2026
+
+- Qué hice hoy: Finalicé la Fase 3 configurando el inicializador SQL y rate limiting en Kong. Además, realicé los tres tests de tolerancia a fallas (instancia caída, corte de replicación y caida de db primaria con promoción de la replica con RPO/RTO), dejando todo documentado en la carpeta fase3.
+- Dónde me trabé: Tuve unas pocas complicaciones al momento de implementar cada uno de los tests.
+- Qué haré en la próxima clase: Continuar con el desarrollo de la app para la fase 3
+- Uso de IA: Solicité ayuda para estructurar los comandos de los tests de falla y redacción de documentación.

@@ -1,34 +1,34 @@
-
 import os
 import psycopg
 from psycopg.rows import dict_row
-from flask import Flask, jsonify, request 
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
 INSTANCIA = os.getenv("INSTANCE_ID", "sin-definir")
 
 
+@app.after_request
+def agregar_cabecera_instancia(respuesta):
+    respuesta.headers["X-Instance"] = INSTANCIA
+    return respuesta
+
+
 @app.get("/health")
 def health():
-    respuesta = jsonify({
+    return jsonify({
         "status": "ok",
         "instance_id": INSTANCIA
-    })
-
-    respuesta.headers["X-Instance"] = INSTANCIA
-    return respuesta, 200
+    }), 200
 
 
 @app.get("/api/v1/recursos")
 def obtener_recursos():
     try:
-        # Conexión a la base de datos réplica
         with psycopg.connect(
             os.environ["DB_REPLICA_URL"],
             connect_timeout=5
         ) as conexion:
-
             with conexion.cursor(row_factory=dict_row) as cursor:
                 cursor.execute(
                     "SELECT id, nombre, cantidad_disponible "
@@ -37,18 +37,41 @@ def obtener_recursos():
                 recursos = cursor.fetchall()
 
         respuesta = jsonify(recursos)
-
-        respuesta.headers["X-Instance"] = INSTANCIA
         respuesta.headers["X-DB"] = "replica"
-
         return respuesta, 200
 
     except (psycopg.Error, KeyError):
-        respuesta = jsonify({
+        return jsonify({
             "error": "No se pudieron consultar los recursos"
-        })
-        respuesta.headers["X-Instance"] = INSTANCIA
-        return respuesta, 503
+        }), 503
+
+
+@app.get("/api/v1/recursos/<int:recurso_id>")
+def obtener_recurso_por_id(recurso_id):
+    try:
+        with psycopg.connect(
+            os.environ["DB_REPLICA_URL"],
+            connect_timeout=5
+        ) as conexion:
+            with conexion.cursor(row_factory=dict_row) as cursor:
+                cursor.execute(
+                    "SELECT id, nombre, cantidad_disponible "
+                    "FROM recursos WHERE id = %s",
+                    (recurso_id,)
+                )
+                recurso = cursor.fetchone()
+
+        if recurso is None:
+            return jsonify({"error": "Recurso no encontrado"}), 404
+
+        respuesta = jsonify(recurso)
+        respuesta.headers["X-DB"] = "replica"
+        return respuesta, 200
+
+    except (psycopg.Error, KeyError):
+        return jsonify({
+            "error": "No se pudo consultar el recurso"
+        }), 503
 
 
 @app.post("/api/v1/movimientos")
@@ -72,9 +95,7 @@ def registrar_movimiento():
             os.environ["DB_PRIMARY_URL"],
             connect_timeout=5
         ) as conexion:
-
             with conexion.cursor(row_factory=dict_row) as cursor:
-                # Bloqueamos el recurso durante el movimiento
                 cursor.execute(
                     "SELECT cantidad_disponible FROM recursos "
                     "WHERE id = %s FOR UPDATE",
@@ -129,17 +150,13 @@ def registrar_movimiento():
             "movimiento_id": movimiento_id,
             "cantidad_disponible": nueva_cantidad
         })
-        respuesta.headers["X-Instance"] = INSTANCIA
         respuesta.headers["X-DB"] = "primary"
-
         return respuesta, 201
 
     except (psycopg.Error, KeyError):
-        respuesta = jsonify({
+        return jsonify({
             "error": "No se pudo registrar el movimiento"
-        })
-        respuesta.headers["X-Instance"] = INSTANCIA
-        return respuesta, 503
+        }), 503
 
 
 if __name__ == "__main__":

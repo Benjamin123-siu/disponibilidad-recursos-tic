@@ -1,18 +1,18 @@
-# Disponibilidad de recursos TIC
+ Disponibilidad de recursos TIC
 
 Proyecto individual ISI601 - Taller de Diseño de Sistemas.
 
-Objetivo: diseñar y construir una API sencilla para consultar la disponibilidad de recursos tecnológicos de un colegio. La arquitectura planificada contará con API Gateway, balanceador, dos instancias de aplicación y PostgreSQL con base primaria y réplica de lectura.
+Objetivo: diseñar y construir una API sencilla para consultar la disponibilidad de recursos tecnológicos de un colegio. La arquitectura cuenta con API Gateway, balanceador, dos instancias de aplicación y PostgreSQL con base primaria y réplica de lectura.
 
 ## Estado
 
-Fase 2 en desarrollo. La primaria PostgreSQL transmite cambios a una réplica de solo lectura.
+Fase 3 lista. El sistema ya tiene la API en Flask conectada a PostgreSQL (lecturas desde la réplica y escrituras en la primaria), protegida por Kong (API key y límite de peticiones) y probada frente a fallas.
 
 ## Documentación
 
-- [Problemática elegida](docs/fase1/PROBLEMA.md)
-
-- [Evidencias de la Fase 2](docs/fase2/EVIDENCIAS.md)
+* [Problemática elegida](docs/fase1/PROBLEMA.md)
+* [Evidencias de la Fase 2](docs/fase2/EVIDENCIAS.md)
+* [Pruebas de falla de la Fase 3](docs/fase3/PRUEBAS_DE_FALLA.md)
 
 ## Configuración inicial (solo la primera vez)
 
@@ -20,11 +20,11 @@ Si ya tienes el archivo `.env` configurado, pasa a **Levantar la arquitectura co
 
 Si acabas de clonar el repositorio, crea un archivo llamado `.env` en la misma carpeta que `compose.yaml`. Escribe una variable por línea con el formato `NOMBRE=valor`.
 
-| Variable | Para qué se usa |
-| --- | --- |
-| `POSTGRES_PASSWORD` | Contraseña del usuario `postgres` de la primaria. |
-| `REPLICATION_PASSWORD` | Contraseña que usa el usuario `replicador` para conectar la réplica a la primaria. |
-| `KONG_API_KEY` | Clave que Kong comprueba al recibir una solicitud. Usa una clave hexadecimal aleatoria de 64 caracteres. |
+| Variable | Para qué se usa | 
+| ----- | ----- | 
+| `POSTGRES_PASSWORD` | Contraseña del usuario `postgres` de la primaria. | 
+| `REPLICATION_PASSWORD` | Contraseña que usa el usuario `replicador` para conectar la réplica a la primaria. | 
+| `KONG_API_KEY` | Clave que Kong comprueba al recibir una solicitud. Usa una clave hexadecimal aleatoria de 64 caracteres. | 
 
 Elige contraseñas distintas para los dos usuarios de PostgreSQL. Git excluye el archivo `.env` para mantener las credenciales fuera del repositorio.
 
@@ -36,7 +36,7 @@ Abre Docker Desktop y espera a que indique `Engine running`. Desde la raíz del 
 docker compose up -d --wait
 ```
 
-Este comando levanta Kong, el balanceador NGINX, las dos instancias de prueba y las dos bases de datos. El servicio `configurar-replicacion` prepara el usuario de replicación y termina. Es normal que aparezca como `Exited` después de completar su tarea.
+Este comando levanta Kong, el balanceador NGINX, las dos instancias de la aplicación y las dos bases de datos. El servicio `configurar-replicacion` prepara el usuario de replicación y termina. Es normal que aparezca como `Exited` después de completar su tarea.
 
 ## Levantar solo las bases de datos
 
@@ -63,7 +63,9 @@ En el primer arranque, la réplica toma una copia de la primaria. En los siguien
    ```
 
 2. Cuando aparezca `recursos_tic=#`, ejecuta `\password postgres`. Escribe la nueva contraseña dos veces y sal con `\q`.
+
 3. Abre tu `.env`, cambia el valor de `POSTGRES_PASSWORD` por esa misma contraseña y guarda el archivo.
+
 4. Comprueba que Docker Compose puede conectarse con la contraseña guardada:
 
    ```sh
@@ -86,9 +88,30 @@ La consulta se ejecuta dentro del contenedor del balanceador. La cabecera `X-Ins
 
 ## Acceder desde el PC mediante Kong
 
-Con la arquitectura completa en ejecución, Kong recibe las solicitudes del PC en `http://127.0.0.1:8000/health`. Para consultar esta ruta, envía una solicitud `GET` con la cabecera `apikey` y el valor de `KONG_API_KEY` guardado en tu `.env`.
+Con la arquitectura completa en ejecución, Kong recibe las solicitudes del PC en `http://127.0.0.1:8000`. Para consultar los endpoints, envía la cabecera `apikey` con el valor de `KONG_API_KEY` guardado en tu `.env`:
 
-| Solicitud | Resultado esperado |
-| --- | --- |
-| Con la clave válida | `200 OK` y la cabecera `X-Instance` con el nombre de la instancia que respondió. |
-| Sin clave o con una clave incorrecta | `401 Unauthorized`. |
+```sh
+# Ver recursos disponibles (lectura desde la réplica)
+curl -i -H "apikey: TU_KONG_API_KEY" http://127.0.0.1:8000/api/v1/recursos
+
+# Ver un recurso por ID
+curl -i -H "apikey: TU_KONG_API_KEY" http://127.0.0.1:8000/api/v1/recursos/1
+
+# Registrar un movimiento (escritura en la primaria)
+curl -i -X POST -H "Content-Type: application/json" \
+  -H "apikey: TU_KONG_API_KEY" \
+  -d '{"recurso_id": 1, "tipo": "entrega", "cantidad": 1}' \
+  http://127.0.0.1:8000/api/v1/movimientos
+```
+
+| Solicitud | Resultado esperado | 
+| ----- | ----- | 
+| Con la clave válida | `200 OK` (o `201 Created` al registrar) y las cabeceras `X-Instance` y `X-DB`. | 
+| Sin clave o con una clave incorrecta | `401 Unauthorized`. | 
+| Si se superan las peticiones permitidas por minuto | `429 Too Many Requests`. | 
+
+## Qué pasa al leer y escribir, y pruebas de falla
+
+* **Lectura y escritura:** las consultas (`GET`) leen desde la réplica y los registros (`POST`) escriben en la primaria. Si la réplica está atrasada o cortada, se puede ver un dato desactualizado momentáneamente o recibir `503 Service Unavailable` si la réplica está caída.
+* **Pruebas de falla:** las tres pruebas realizadas (apagar una instancia, cortar/detener la réplica y matar la primaria promoviendo la réplica con medición de RPO y RTO) están documentadas en [docs/fase3/PRUEBAS_DE_FALLA.md](docs/fase3/PRUEBAS_DE_FALLA.md) y sus capturas en `docs/fase3/Evidencias`.
+* **Limitaciones:** en las pruebas de falla, promover la réplica y apuntar las instancias a ella se hizo de forma manual para medir el tiempo de recuperación, y para volver a dejar todo limpio desde cero se usa `docker compose down -v && docker compose up -d --wait`.

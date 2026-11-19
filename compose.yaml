@@ -15,6 +15,8 @@ services:
     volumes:
       - primaria_datos:/var/lib/postgresql/data
       - ./infra/postgres/pg_hba.conf:/etc/postgresql/acceso.conf:ro
+      - ./infra/postgres/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
+      - ./infra/postgres/02_datos_iniciales.sql:/docker-entrypoint-initdb.d/02_datos_iniciales.sql:ro
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "recursos_tic"]
       interval: 5s
@@ -134,13 +136,18 @@ services:
                 strip_path: false
 
             plugins:
-              - name: key-auth
-                config:
-                  key_names: [apikey]
-                  key_in_query: false
-                  key_in_body: false
-                  hide_credentials: true
+            - name: key-auth
+              config:
+                key_names: [apikey]
+                key_in_query: false
+                key_in_body: false
+                hide_credentials: true
 
+            - name: rate-limiting
+              config:
+                minute: 15
+                policy: local
+                hide_client_headers: false
         consumers:
           - username: prueba-fase2
             keyauth_credentials:
